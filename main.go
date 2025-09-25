@@ -11,12 +11,12 @@ import (
 )
 
 type model struct {
-	railwayMap [][]Tile
-	trains     []Train
-	actions    []string // items on the to-do list#
-	helpKeys   keyMap
-	help       help.Model
-	connected  bool
+	tiles     [][]Tile
+	Trains    []Train
+	actions   []string // items on the to-do list#
+	helpKeys  keyMap
+	help      help.Model
+	connected bool
 }
 
 type Tile struct {
@@ -27,18 +27,26 @@ type Tile struct {
 }
 
 type Train struct {
-	//irgendwie noch zusmamenfassung in einen Zug, selbstreferenz funktioniert nicht
-	Position [3]int //x,y,track(1,2,3,4) ->
-	Goal     [3]int //nur fürs testen
-	MaxSpeed int
-
-	//
-	Size  int
-	Cargo int
+	Waggons            []TrainType //Alle müssen nebeneinander spawnen
+	Schedule           Schedule
+	NextStop           Stop     //nur fürs testen
+	currentPath        [][3]int //neu berechnen bei laden
+	currentPathSignals [][3]int
+	Name               string
+	waiting            bool
 }
 
+type TrainType struct {
+	Position [3]int //x,y,sub
+	MaxSpeed int
+	Id       int
+	Size     int
+	Cargo    int
+}
+
+var p = tea.NewProgram(initialModel())
+
 func main() {
-	p := tea.NewProgram(initialModel())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
@@ -65,7 +73,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// These keys should exit the program.
 		case key.Matches(msg, m.helpKeys.connect):
-			m.connected = !m.connected
+			if len(m.tiles) == 0 {
+				startListeningToBackend()
+			}
 		case key.Matches(msg, m.helpKeys.help):
 			m.help.ShowAll = !m.help.ShowAll
 		case key.Matches(msg, m.helpKeys.quit):
@@ -74,7 +84,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Return the updated model to the Bubble Tea runtime for processing.
 		// Note that we're not returning a command.
+	case gamestateTemp:
+		m.Trains = msg.Trains
+		m.tiles = msg.Tiles
+		m.connected = true
+	case tileUpdateMSG:
+		switch msg.Action {
+		case "build":
+			switch msg.Subject {
+			case "rail":
+				m.tiles[msg.X][msg.Y].Tracks[(msg.Subtile)-1] = true
+			}
+		case "remove":
+			switch msg.Subject {
+			case "rail":
+				m.tiles[msg.X][msg.Y].Tracks[(msg.Subtile)-1] = false
+
+			}
+
+		}
 	}
+
 	return m, nil
 }
 
@@ -83,16 +113,28 @@ func (m model) View() string {
 	switch m.connected {
 	case false:
 		result += "Bitte mit einer instanz verbinden \n\n"
+	case true:
+		borderStyle := lipgloss.NewStyle().
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("63"))
+
+		result += borderStyle.Render(convertMapToString(&m))
+		result += "\n"
+
 	}
 
-	borderStyle := lipgloss.NewStyle().
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("63"))
-
-	result += borderStyle.Render(convertMapToString(m))
-	result += "\n\n\n\n\n\n"
 	result += m.help.View(m.helpKeys)
+	if !m.help.ShowAll {
+		result += "\n\n\n"
+	}
+	if len(m.Trains) > 0 {
+		for i, train := range m.Trains {
+			for _, waggon := range train.Waggons {
+				result += fmt.Sprint(i) + fmt.Sprintf(": %d;%d;%d", waggon.Position[0], waggon.Position[1], waggon.Position[2]) + "\n"
 
+			}
+		}
+	}
 	// Send the UI for rendering
 	return result
 }

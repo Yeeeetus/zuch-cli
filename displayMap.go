@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 var testMap = []string{
 	/*
 	 0.1.2.3.4.5.6.7.8.9*/
@@ -15,16 +17,86 @@ var testMap = []string{
 	" . . . . . .|. . . ", //9
 }
 
-func convertMapToString(model model) string {
-	result := ""
-	for k, v := range testMap {
-		if k == 0 {
+func convertMapToString(model *model) string {
+	// ich wil die map eigentlich gerne mit 3x3 Tiles beschreiben#
+	intermidiate := [][]rune{}
+	intermidiate = append(intermidiate, []rune{'0', '0', '0', '1', '1', '1', '2', '2', '2', '3', '3', '3', '4', '4', '4'})
+	if len(model.tiles) == 0 {
+		return ""
+	}
 
-			result += v
-		} else {
+	// wilken adressiert die mit [x][y] => x gibt das einzelne an, y die zeile
 
-			result += "\n" + v
+	for y := range model.tiles {
+		lineRow1 := []rune{}
+		lineRow2 := []rune{}
+		lineRow3 := []rune{}
+		for x := range model.tiles[y] {
+
+			stringTile := [3][]rune{[]rune{' ', ' ', ' '}, []rune{' ', ' ', ' '}, []rune{' ', ' ', ' '}}
+			// links nach rechts
+			// Soll wohl mit x und y laufen, andersrum als normalerweise,
+			stringTile = displayTracks(model.tiles[x][y], stringTile)
+			lineRow1 = append(lineRow1, stringTile[0]...)
+			lineRow2 = append(lineRow2, stringTile[1]...)
+			lineRow3 = append(lineRow3, stringTile[2]...)
+		}
+		intermidiate = append(intermidiate, lineRow1)
+		intermidiate = append(intermidiate, lineRow2)
+		intermidiate = append(intermidiate, lineRow3)
+	}
+	for i, train := range model.Trains {
+		for _, wagon := range train.Waggons {
+			// 0 => lins 1 oben 2 rechts 3 unten
+			actualX := -1
+			actualY := -1
+			switch wagon.Position[2] {
+			case 1:
+				actualX = (wagon.Position[0] * 3)
+				actualY = (wagon.Position[1] * 3) + 1
+			case 2:
+				actualX = (wagon.Position[0] * 3) + 1
+				actualY = (wagon.Position[1] * 3)
+			case 3:
+				actualX = (wagon.Position[0] * 3) + 2
+				actualY = (wagon.Position[1] * 3) + 1
+			case 4:
+				actualX = (wagon.Position[0] * 3) + 1
+				actualY = (wagon.Position[1] * 3) + 2
+			}
+			intermidiate[actualY+1][actualX] = []rune(fmt.Sprint(i))[0]
 		}
 	}
+
+	result := ""
+	for _, line := range intermidiate {
+		result += string(line) + "\n"
+	}
 	return result
+}
+
+func displayTracks(tile Tile, lines [3][]rune) [3][]rune {
+	tracks := tile.Tracks
+	if tracks[0] {
+		lines[1][0] = '-'
+	}
+	if tracks[1] {
+		lines[0][1] = '|'
+	}
+	if tracks[2] {
+		lines[1][2] = '-'
+	}
+	if tracks[3] {
+		lines[2][1] = '|'
+	}
+	if tracks[0] && tracks[2] {
+		lines[1][1] = '-'
+	}
+	if tracks[1] && tracks[3] {
+		lines[1][1] = '|'
+	}
+	if tracks[0] && tracks[2] && tracks[1] && tracks[3] {
+		lines[1][1] = '+'
+	}
+	return lines
 }

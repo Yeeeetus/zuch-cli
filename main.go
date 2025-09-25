@@ -12,7 +12,7 @@ import (
 
 type model struct {
 	tiles     [][]Tile
-	Trains    []Train
+	Trains    map[int]*Train
 	actions   []string // items on the to-do list#
 	helpKeys  keyMap
 	help      help.Model
@@ -34,6 +34,7 @@ type Train struct {
 	currentPathSignals [][3]int
 	Name               string
 	waiting            bool
+	Id                 int
 }
 
 type TrainType struct {
@@ -59,7 +60,7 @@ func (m model) Init() tea.Cmd {
 }
 
 func initialModel() model {
-	return model{help: help.New(), helpKeys: keys, connected: false}
+	return model{help: help.New(), helpKeys: keys, connected: false, Trains: make(map[int]*Train)}
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -85,9 +86,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Return the updated model to the Bubble Tea runtime for processing.
 		// Note that we're not returning a command.
 	case gamestateTemp:
-		m.Trains = msg.Trains
+		for _, train := range msg.Trains {
+			m.Trains[train.Id] = &train
+		}
 		m.tiles = msg.Tiles
 		m.connected = true
+	case Train:
+		m.Trains[msg.Id] = &msg
 	case tileUpdateMSG:
 		switch msg.Action {
 		case "build":

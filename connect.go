@@ -35,7 +35,13 @@ func startListeningToBackend() {
 					fmt.Println("EROOR", err)
 				}
 				p.Send(update)
-
+			case "train.move":
+				var recievedTrain Train
+				err := json.Unmarshal(envelope.Msg, &recievedTrain)
+				if err != nil {
+					fmt.Println("EROOR", err)
+				}
+				p.Send(recievedTrain)
 			}
 
 		}

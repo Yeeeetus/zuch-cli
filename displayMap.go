@@ -79,6 +79,7 @@ func convertMapToString(model *model) string {
 
 func displayTracks(tile Tile, lines [3][]rune) [3][]rune {
 	tracks := tile.Tracks
+	// Gleise anzeigen
 	if tracks[0] {
 		lines[1][0] = '-'
 	}
@@ -100,6 +101,7 @@ func displayTracks(tile Tile, lines [3][]rune) [3][]rune {
 	if tracks[0] && tracks[2] && tracks[1] && tracks[3] {
 		lines[1][1] = '+'
 	}
+	//  Signale Anzeigen
 	if tile.Signals[0] {
 		lines[0][0] = 'S'
 	}

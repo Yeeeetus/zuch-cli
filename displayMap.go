@@ -45,6 +45,7 @@ func convertMapToString(model *model) string {
 		intermidiate = append(intermidiate, lineRow2)
 		intermidiate = append(intermidiate, lineRow3)
 	}
+	// Display Trains
 	for i, train := range model.Trains {
 		for _, wagon := range train.Waggons {
 			// 0 => lins 1 oben 2 rechts 3 unten
@@ -67,6 +68,7 @@ func convertMapToString(model *model) string {
 			intermidiate[actualY+1][actualX] = []rune(fmt.Sprint(i))[0]
 		}
 	}
+	// Dislpay Signals
 
 	result := ""
 	for _, line := range intermidiate {
@@ -98,5 +100,18 @@ func displayTracks(tile Tile, lines [3][]rune) [3][]rune {
 	if tracks[0] && tracks[2] && tracks[1] && tracks[3] {
 		lines[1][1] = '+'
 	}
+	if tile.Signals[0] {
+		lines[0][0] = 'S'
+	}
+	if tile.Signals[1] {
+		lines[0][2] = 'S'
+	}
+	if tile.Signals[2] {
+		lines[2][2] = 'S'
+	}
+	if tile.Signals[3] {
+		lines[2][0] = 'S'
+	}
+
 	return lines
 }

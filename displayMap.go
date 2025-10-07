@@ -65,10 +65,12 @@ func convertMapToString(model *model) string {
 				actualX = (wagon.Position[0] * 3) + 1
 				actualY = (wagon.Position[1] * 3) + 2
 			}
-			intermidiate[actualY+1][actualX] = []rune(fmt.Sprint(i))[0]
+			if !(actualX == -1 || actualY == -1) {
+				intermidiate[actualY+1][actualX] = []rune(fmt.Sprint(i))[0]
+			}
+
 		}
 	}
-	// Dislpay Signals
 
 	result := ""
 	for _, line := range intermidiate {
@@ -80,6 +82,13 @@ func convertMapToString(model *model) string {
 func displayTracks(tile Tile, lines [3][]rune) [3][]rune {
 	tracks := tile.Tracks
 	// Gleise anzeigen
+	if tile.IsPlattform {
+		lines[0][0] = '#'
+		lines[0][2] = '#'
+		lines[2][0] = '#'
+		lines[2][2] = '#'
+	}
+
 	if tracks[0] {
 		lines[1][0] = '-'
 	}

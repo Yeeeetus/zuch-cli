@@ -35,13 +35,20 @@ func startListeningToBackend() {
 					fmt.Println("EROOR", err)
 				}
 				p.Send(update)
-			case "train.update":
-				var recievedTrain Train
-				err := json.Unmarshal(envelope.Msg, &recievedTrain)
+			case "train.move":
+				var recievedMSG trainMoveMSG
+				err := json.Unmarshal(envelope.Msg, &recievedMSG)
 				if err != nil {
 					fmt.Println("EROOR", err)
 				}
-				p.Send(recievedTrain)
+				p.Send(recievedMSG)
+			case "train.create":
+				var recievedMSG Train
+				err := json.Unmarshal(envelope.Msg, &recievedMSG)
+				if err != nil {
+					fmt.Println("EROOR", err)
+				}
+				p.Send(recievedMSG)
 			}
 
 		}
@@ -51,6 +58,11 @@ func startListeningToBackend() {
 type wsEnvelope struct {
 	Type string
 	Msg  json.RawMessage
+}
+
+type trainMoveMSG struct {
+	Id      int
+	Waggons []TrainType
 }
 
 type gamestateTemp struct {

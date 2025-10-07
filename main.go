@@ -24,6 +24,25 @@ type Tile struct {
 	Signals     [4]bool
 	IsPlattform bool
 	IsBlocked   bool
+	ActiveTile  *ActiveTile
+}
+
+type ActiveTile struct {
+	Category   *ActiveTileCategory
+	Name       string
+	Level      int
+	Stations   []*Station //Stationen, die in der Nähe sind. wird mit changeStationTile verwaltet
+	Storage    map[string]int
+	maxStorage int //maximum Lager pro Gut -> sonst kann es zu unwiederruflichen auffüllen kommen
+}
+type ActiveTileCategory struct {
+	Productioncycles []Produktionszyklus `json:"Produktionszyklen"`
+}
+
+type Produktionszyklus struct {
+	Consumtion                 map[string]int `json:"Verbrauch"`
+	Produktion                 map[string]int `json:"Produktion"`
+	VerfuegbareLevelUndScaling []int          `json:"verfügbareLevelUndScaling"`
 }
 
 type Train struct {
@@ -91,7 +110,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.tiles = msg.Tiles
 		m.connected = true
-	case Train:
+	case trainMoveMSG:
+		m.Trains[msg.Id].Waggons = msg.Waggons
+	case Train: // train.create
 		m.Trains[msg.Id] = &msg
 	case tileUpdateMSG:
 		switch msg.Action {
@@ -115,14 +136,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	result := ""
+	borderStyle := lipgloss.NewStyle().
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("63"))
 	switch m.connected {
 	case false:
 		result += "Bitte mit einer instanz verbinden \n\n"
 	case true:
-		borderStyle := lipgloss.NewStyle().
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color("63"))
-
 		result += borderStyle.Render(convertMapToString(&m))
 		result += "\n"
 
@@ -132,14 +152,16 @@ func (m model) View() string {
 	if !m.help.ShowAll {
 		result += "\n\n\n"
 	}
+
+	trainList := "Unsere Aktuellen Züge :D \n"
 	if len(m.Trains) > 0 {
 		for i, train := range m.Trains {
 			for _, waggon := range train.Waggons {
-				result += fmt.Sprint(i) + fmt.Sprintf(": %d;%d;%d", waggon.Position[0], waggon.Position[1], waggon.Position[2]) + "\n"
+				trainList += fmt.Sprint(i) + fmt.Sprintf(": %d;%d;%d", waggon.Position[0], waggon.Position[1], waggon.Position[2]) + "\n"
 
 			}
 		}
 	}
 	// Send the UI for rendering
-	return result
+	return lipgloss.JoinHorizontal(0.2, result, borderStyle.Render(trainList))
 }

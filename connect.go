@@ -21,38 +21,33 @@ func startListeningToBackend() {
 
 			switch envelope.Type {
 			case "game.initialLoad":
-				var state gamestateTemp
-				err := json.Unmarshal(envelope.Msg, &state)
-				if err != nil {
-					fmt.Println("EROOR", err)
-				}
-				p.Send(state)
-
-			case "tile.update":
-				var update tileUpdateMSG
-				err := json.Unmarshal(envelope.Msg, &update)
-				if err != nil {
-					fmt.Println("EROOR", err)
-				}
-				p.Send(update)
+				unMarshalAndSend[gamestateTemp](envelope)
+			case "rail.create":
+				unMarshalAndSend[railCreateMSG](envelope)
+			case "rail.remove":
+				unMarshalAndSend[railRemoveMSG](envelope)
+			case "signal.create":
+				unMarshalAndSend[signalCreateMSG](envelope)
+			case "signal.remove":
+				unMarshalAndSend[signalRemoveMSG](envelope)
 			case "train.move":
-				var recievedMSG trainMoveMSG
-				err := json.Unmarshal(envelope.Msg, &recievedMSG)
-				if err != nil {
-					fmt.Println("EROOR", err)
-				}
-				p.Send(recievedMSG)
+				unMarshalAndSend[trainMoveMSG](envelope)
 			case "train.create":
-				var recievedMSG Train
-				err := json.Unmarshal(envelope.Msg, &recievedMSG)
-				if err != nil {
-					fmt.Println("EROOR", err)
-				}
-				p.Send(recievedMSG)
+				unMarshalAndSend[Train](envelope)
 			}
 
 		}
 	}()
+}
+
+func unMarshalAndSend[T any](envelope wsEnvelope) T {
+	var recievedMSG T
+	err := json.Unmarshal(envelope.Msg, &recievedMSG)
+	if err != nil {
+		fmt.Println("EROOR", err)
+	}
+	p.Send(recievedMSG)
+	return recievedMSG
 }
 
 type wsEnvelope struct {
@@ -105,10 +100,20 @@ type Plattform struct {
 }
 
 type tileUpdateMSG struct {
-	X       int
-	Y       int
-	Subtile int // 1 => links, 2 => oben, 3 => rechts, 4 => unten
+	Position [3]int // 0 => links, 1 => oben, 2 => rechts, 3 => unten
 	// Wilken hat sich entschlossen immer wenn ein subtile als int gespeichert wird bei 1 anzufangen und wenn es ein bool[4] ist bei 0, also kann sein das es sich irgendwo verschiebt aber das kriegen wir sicher noch behoben Bei schienen auch analog
-	Subject string //
-	Action  string // remove, build
+}
+
+// nicht im backend vorhanden, nur hier da bubbletea das will
+type signalCreateMSG struct {
+	Position [3]int // 0 => links, 1 => oben, 2 => rechts, 3 => unten
+}
+type signalRemoveMSG struct {
+	Position [3]int // 0 => links, 1 => oben, 2 => rechts, 3 => unten
+}
+type railCreateMSG struct {
+	Position [3]int // 0 => links, 1 => oben, 2 => rechts, 3 => unten
+}
+type railRemoveMSG struct {
+	Position [3]int // 0 => links, 1 => oben, 2 => rechts, 3 => unten
 }

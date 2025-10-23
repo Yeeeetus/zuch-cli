@@ -114,21 +114,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Trains[msg.Id].Waggons = msg.Waggons
 	case Train: // train.create
 		m.Trains[msg.Id] = &msg
-	case tileUpdateMSG:
-		switch msg.Action {
-		case "build":
-			switch msg.Subject {
-			case "rail":
-				m.tiles[msg.X][msg.Y].Tracks[(msg.Subtile)-1] = true
-			}
-		case "remove":
-			switch msg.Subject {
-			case "rail":
-				m.tiles[msg.X][msg.Y].Tracks[(msg.Subtile)-1] = false
 
-			}
-
-		}
+	case signalCreateMSG:
+		m.tiles[msg.Position[0]][msg.Position[1]].Signals[(msg.Position[2])-1] = true
+	case signalRemoveMSG:
+		m.tiles[msg.Position[0]][msg.Position[1]].Signals[(msg.Position[2])-1] = false
+	case railCreateMSG:
+		m.tiles[msg.Position[0]][msg.Position[1]].Tracks[(msg.Position[2])-1] = true
+	case railRemoveMSG:
+		m.tiles[msg.Position[0]][msg.Position[1]].Tracks[(msg.Position[2])-1] = false
 	}
 
 	return m, nil

@@ -5,13 +5,17 @@ import "github.com/charmbracelet/bubbles/key"
 // keyMap defines a set of keybindings. To work for help it must satisfy
 // key.Map. It could also very easily be a map[string]key.Binding.
 type keyMap struct {
-	connect    key.Binding
-	disconnect key.Binding
-	save       key.Binding
-	pause      key.Binding
-	unpause    key.Binding
-	quit       key.Binding
-	help       key.Binding
+	connect      key.Binding
+	disconnect   key.Binding
+	save         key.Binding
+	pause        key.Binding
+	unpause      key.Binding
+	quit         key.Binding
+	help         key.Binding
+	createTrack  key.Binding
+	removeTrack  key.Binding
+	createSignal key.Binding
+	removeSignal key.Binding
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
@@ -22,6 +26,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.connect, k.disconnect, k.pause, k.unpause}, // first column
 		{k.save, k.quit}, // second column
+		{k.createTrack, k.removeTrack, k.createSignal, k.removeSignal},
 	}
 }
 
@@ -53,5 +58,21 @@ var keys = keyMap{
 	help: key.NewBinding(
 		key.WithKeys("h"),
 		key.WithHelp("h", "Hilfe"),
+	),
+	createTrack: key.NewBinding(
+		key.WithKeys("1"),
+		key.WithHelp("1", "Gleis bauen"),
+	),
+	removeTrack: key.NewBinding(
+		key.WithKeys("2"),
+		key.WithHelp("2", "gleis entfernen"),
+	),
+	createSignal: key.NewBinding(
+		key.WithKeys("3"),
+		key.WithHelp("3", "Signal bauen"),
+	),
+	removeSignal: key.NewBinding(
+		key.WithKeys("4"),
+		key.WithHelp("4", "Signal entfernen"),
 	),
 }

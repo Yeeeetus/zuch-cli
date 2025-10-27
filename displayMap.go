@@ -1,26 +1,13 @@
 package main
 
-import "fmt"
-
-var testMap = []string{
-	/*
-	 0.1.2.3.4.5.6.7.8.9*/
-	"-.+.-.-.+.-.-.-.-.-", //0
-	" .|. . .+.+. . . . ", //1
-	" . . . . .+.+. . . ", //2
-	" .|. . . . .|. . . ", //3
-	" .+.-.-.+.-.+. . . ", //4
-	" . . . .|. .|. . . ", //5
-	" . . . .|. .|. . . ", //6
-	" . .-.-.+.-.+.-.-. ", //7
-	" . . . . . .|. . . ", //8
-	" . . . . . .|. . . ", //9
-}
+import (
+	"fmt"
+	"slices"
+)
 
 func convertMapToString(model *model) string {
 	// ich wil die map eigentlich gerne mit 3x3 Tiles beschreiben#
 	intermidiate := [][]rune{}
-	intermidiate = append(intermidiate, []rune{'0', '0', '0', '1', '1', '1', '2', '2', '2', '3', '3', '3', '4', '4', '4'})
 	if len(model.tiles) == 0 {
 		return ""
 	}
@@ -46,7 +33,17 @@ func convertMapToString(model *model) string {
 		intermidiate = append(intermidiate, lineRow3)
 	}
 	// Display Trains
-	for i, train := range model.Trains {
+	var indexes []int
+	for i := range model.Trains {
+		indexes = append(indexes, i)
+	}
+	slices.Sort(indexes)
+	var trains []*Train
+	for i := range indexes {
+		trains = append(trains, model.Trains[i])
+	}
+
+	for i, train := range trains {
 		for _, wagon := range train.Waggons {
 			// 0 => lins 1 oben 2 rechts 3 unten
 			actualX := -1
@@ -88,6 +85,12 @@ func displayTracks(tile Tile, lines [3][]rune) [3][]rune {
 		lines[2][0] = '#'
 		lines[2][2] = '#'
 	}
+	if tile.IsBlocked {
+		lines[0][0] = '*'
+		lines[0][2] = '*'
+		lines[2][0] = '*'
+		lines[2][2] = '*'
+	}
 
 	if tracks[0] {
 		lines[1][0] = '-'
@@ -125,4 +128,40 @@ func displayTracks(tile Tile, lines [3][]rune) [3][]rune {
 	}
 
 	return lines
+}
+
+func calculateSubtile(x_in_grid int, y_in_grid int) (int, bool, bool) {
+	isSignal, isTrack := false, false // mitte geht ja auhc noch und das ist keins von beidem da man die nicht direkt bauen kann !
+	var subtile int
+	switch {
+	// Gleise
+	case x_in_grid == 0 && y_in_grid == 1:
+		subtile = 1
+		isTrack = true
+	case x_in_grid == 1 && y_in_grid == 0:
+		subtile = 2
+		isTrack = true
+	case x_in_grid == 2 && y_in_grid == 1:
+		subtile = 3
+		isTrack = true
+	case x_in_grid == 1 && y_in_grid == 2:
+		subtile = 4
+		isTrack = true
+		// Signale
+	case x_in_grid == 0 && y_in_grid == 1:
+		subtile = 1
+		isSignal = true
+	case x_in_grid == 1 && y_in_grid == 0:
+		subtile = 2
+		isSignal = true
+	case x_in_grid == 2 && y_in_grid == 1:
+		subtile = 3
+		isSignal = true
+	case x_in_grid == 1 && y_in_grid == 2:
+		subtile = 4
+		isSignal = true
+	default:
+		subtile = -1
+	}
+	return subtile, isTrack, isSignal
 }

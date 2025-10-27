@@ -8,63 +8,28 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gorilla/websocket"
 )
 
 type model struct {
 	tiles     [][]Tile
 	Trains    map[int]*Train
-	actions   []string // items on the to-do list#
 	helpKeys  keyMap
+	conn      *websocket.Conn
 	help      help.Model
 	connected bool
+	x         int
+	y         int
+	cor_x     int
+	cor_y     int
+	tile_x    int
+	tile_y    int
+	subtile   int
+	isSignal  bool
+	isTrack   bool
 }
 
-type Tile struct {
-	Tracks      [4]bool
-	Signals     [4]bool
-	IsPlattform bool
-	IsBlocked   bool
-	ActiveTile  *ActiveTile
-}
-
-type ActiveTile struct {
-	Category   *ActiveTileCategory
-	Name       string
-	Level      int
-	Stations   []*Station //Stationen, die in der Nähe sind. wird mit changeStationTile verwaltet
-	Storage    map[string]int
-	maxStorage int //maximum Lager pro Gut -> sonst kann es zu unwiederruflichen auffüllen kommen
-}
-type ActiveTileCategory struct {
-	Productioncycles []Produktionszyklus `json:"Produktionszyklen"`
-}
-
-type Produktionszyklus struct {
-	Consumtion                 map[string]int `json:"Verbrauch"`
-	Produktion                 map[string]int `json:"Produktion"`
-	VerfuegbareLevelUndScaling []int          `json:"verfügbareLevelUndScaling"`
-}
-
-type Train struct {
-	Waggons            []TrainType //Alle müssen nebeneinander spawnen
-	Schedule           Schedule
-	NextStop           Stop     //nur fürs testen
-	currentPath        [][3]int //neu berechnen bei laden
-	currentPathSignals [][3]int
-	Name               string
-	waiting            bool
-	Id                 int
-}
-
-type TrainType struct {
-	Position [3]int //x,y,sub
-	MaxSpeed int
-	Id       int
-	Size     int
-	Cargo    int
-}
-
-var p = tea.NewProgram(initialModel())
+var p = tea.NewProgram(initialModel(), tea.WithAltScreen(), tea.WithMouseCellMotion())
 
 func main() {
 	if _, err := p.Run(); err != nil {
@@ -84,8 +49,19 @@ func initialModel() model {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.MouseMsg:
+		// Prüfe den Typ des Mausereignisses
+		switch msg.Button {
+		case tea.MouseButtonLeft:
+			m.x = msg.X
+			m.y = msg.Y
+			cor_x, cor_y := m.x-1, m.y-1
+			m.tile_x, m.tile_y = cor_x/3, cor_y/3
+			x_in_grid, y_in_grid := cor_x%3, cor_y%3
 
-	// Is it a key press?
+			m.subtile, m.isTrack, m.isSignal = calculateSubtile(x_in_grid, y_in_grid)
+		}
+
 	case tea.KeyMsg:
 
 		// Cool, what was the actual key pressed?
@@ -94,10 +70,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// These keys should exit the program.
 		case key.Matches(msg, m.helpKeys.connect):
 			if len(m.tiles) == 0 {
-				startListeningToBackend()
+				startListeningToBackend(&m)
 			}
 		case key.Matches(msg, m.helpKeys.help):
 			m.help.ShowAll = !m.help.ShowAll
+		case key.Matches(msg, m.helpKeys.createTrack):
+			sendTileUpdateMSG(&m, "rail.create")
+		case key.Matches(msg, m.helpKeys.removeTrack):
+			sendTileUpdateMSG(&m, "rail.remove")
+		case key.Matches(msg, m.helpKeys.createSignal):
+			sendTileUpdateMSG(&m, "signal.create")
+		case key.Matches(msg, m.helpKeys.removeSignal):
+			sendTileUpdateMSG(&m, "signal.remove")
 		case key.Matches(msg, m.helpKeys.quit):
 			return m, tea.Quit
 		}
@@ -123,6 +107,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.tiles[msg.Position[0]][msg.Position[1]].Tracks[(msg.Position[2])-1] = true
 	case railRemoveMSG:
 		m.tiles[msg.Position[0]][msg.Position[1]].Tracks[(msg.Position[2])-1] = false
+	case trainRemoveMSG:
+		delete(m.Trains, msg.id)
+	case blockedTilesMSG:
+		for _, v := range msg.Tiles {
+			m.tiles[v[0]][v[1]].IsBlocked = true
+		}
+	case unblockedTilesMSG:
+		for _, v := range msg.Tiles {
+			m.tiles[v[0]][v[1]].IsBlocked = false
+		}
 	}
 
 	return m, nil
@@ -141,12 +135,6 @@ func (m model) View() string {
 		result += "\n"
 
 	}
-
-	result += m.help.View(m.helpKeys)
-	if !m.help.ShowAll {
-		result += "\n\n\n"
-	}
-
 	trainList := "Unsere Aktuellen Züge :D \n"
 	if len(m.Trains) > 0 {
 		for i, train := range m.Trains {
@@ -156,6 +144,18 @@ func (m model) View() string {
 			}
 		}
 	}
+	result = lipgloss.JoinHorizontal(lipgloss.Top, result, "                          ", borderStyle.Render(trainList)) // jaja die sind ein wichtiger platzhalter
+
+	result = lipgloss.JoinVertical(lipgloss.Left, result, m.help.View(m.helpKeys))
+
+	if !m.help.ShowAll {
+		result += "\n\n\n"
+	}
+
+	location := fmt.Sprintf("Folgendes %3d:%3d, entspricht Feld %2d:%2d mit Subtile %2d, Mögliche Belegungen (Signal %t, Track %t)",
+		m.cor_x, m.cor_y, m.tile_x, m.tile_y, m.subtile, m.isSignal, m.isTrack)
+
+	result = lipgloss.JoinVertical(lipgloss.Left, result, location)
 	// Send the UI for rendering
-	return lipgloss.JoinHorizontal(0.2, result, borderStyle.Render(trainList))
+	return result
 }

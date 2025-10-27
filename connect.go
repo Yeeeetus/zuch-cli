@@ -7,8 +7,12 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func startListeningToBackend() {
-	conn, _, _ := websocket.DefaultDialer.Dial("ws://localhost:8080/ws?username=asd", nil)
+func startListeningToBackend(m *model) {
+	conn, _, err := websocket.DefaultDialer.Dial("ws://localhost:8080/ws?username=asd", nil)
+	if err != nil {
+		return
+	}
+	m.conn = conn
 	go func() {
 
 		for {
@@ -34,6 +38,12 @@ func startListeningToBackend() {
 				unMarshalAndSend[trainMoveMSG](envelope)
 			case "train.create":
 				unMarshalAndSend[Train](envelope)
+			case "train.remove":
+				unMarshalAndSend[trainRemoveMSG](envelope)
+			case "tiles.block":
+				unMarshalAndSend[blockedTilesMSG](envelope)
+			case "tiles.unblock":
+				unMarshalAndSend[unblockedTilesMSG](envelope)
 			}
 
 		}
@@ -50,70 +60,13 @@ func unMarshalAndSend[T any](envelope wsEnvelope) T {
 	return recievedMSG
 }
 
-type wsEnvelope struct {
-	Type string
-	Msg  json.RawMessage
-}
-
-type trainMoveMSG struct {
-	Id      int
-	Waggons []TrainType
-}
-
-type gamestateTemp struct {
-	Users     []User
-	Schedules []Schedule
-	Stations  []Station
-	Tiles     [][]Tile
-	Trains    []Train
-}
-
-type User struct {
-	username    string
-	isConnected bool
-	connection  *websocket.Conn
-}
-
-type UserInput struct {
-	action    string
-	username  string
-	parameter any
-}
-
-type Schedule struct {
-	name  string
-	user  User
-	stops []Stop
-}
-
-type Stop struct {
-	id   int
-	goal [3]int //wird Station, bei der man sich ein Tile abholt
-}
-
-type Station struct {
-	plattforms []Plattform
-}
-
-type Plattform struct {
-	tiles []Tile
-}
-
-type tileUpdateMSG struct {
-	Position [3]int // 0 => links, 1 => oben, 2 => rechts, 3 => unten
-	// Wilken hat sich entschlossen immer wenn ein subtile als int gespeichert wird bei 1 anzufangen und wenn es ein bool[4] ist bei 0, also kann sein das es sich irgendwo verschiebt aber das kriegen wir sicher noch behoben Bei schienen auch analog
-}
-
-// nicht im backend vorhanden, nur hier da bubbletea das will
-type signalCreateMSG struct {
-	Position [3]int // 0 => links, 1 => oben, 2 => rechts, 3 => unten
-}
-type signalRemoveMSG struct {
-	Position [3]int // 0 => links, 1 => oben, 2 => rechts, 3 => unten
-}
-type railCreateMSG struct {
-	Position [3]int // 0 => links, 1 => oben, 2 => rechts, 3 => unten
-}
-type railRemoveMSG struct {
-	Position [3]int // 0 => links, 1 => oben, 2 => rechts, 3 => unten
+func sendTileUpdateMSG(m *model, msgType string) {
+	if m.conn != nil {
+		pos := tileUpdateMSG{Position: [3]int{m.tile_x, m.tile_y, m.subtile}}
+		envelope := wsEnvelopeSend{Type: msgType, Msg: pos}
+		err := m.conn.WriteJSON(envelope)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 }

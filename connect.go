@@ -61,7 +61,7 @@ func unMarshalAndSend[T any](envelope wsEnvelope) T {
 }
 
 func sendTileUpdateMSG(m *model, msgType string) {
-	if m.conn != nil {
+	if m.conn != nil && m.subtile > 0 {
 		pos := tileUpdateMSG{Position: [3]int{m.tile_x, m.tile_y, m.subtile}}
 		envelope := wsEnvelopeSend{Type: msgType, Msg: pos}
 		err := m.conn.WriteJSON(envelope)

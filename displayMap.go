@@ -79,17 +79,18 @@ func convertMapToString(model *model) string {
 func displayTracks(tile Tile, lines [3][]rune) [3][]rune {
 	tracks := tile.Tracks
 	// Gleise anzeigen
-	if tile.IsPlattform {
-		lines[0][0] = '#'
-		lines[0][2] = '#'
-		lines[2][0] = '#'
-		lines[2][2] = '#'
-	}
 	if tile.IsBlocked {
 		lines[0][0] = '*'
 		lines[0][2] = '*'
 		lines[2][0] = '*'
 		lines[2][2] = '*'
+	}
+
+	if tile.IsPlattform {
+		lines[0][0] = '#'
+		lines[0][2] = '#'
+		lines[2][0] = '#'
+		lines[2][2] = '#'
 	}
 
 	if tracks[0] {

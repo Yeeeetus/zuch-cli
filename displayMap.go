@@ -63,7 +63,7 @@ func convertMapToString(model *model) string {
 				actualY = (wagon.Position[1] * 3) + 2
 			}
 			if !(actualX == -1 || actualY == -1) {
-				intermidiate[actualY+1][actualX] = []rune(fmt.Sprint(i))[0]
+				intermidiate[actualY][actualX] = []rune(fmt.Sprint(i))[0]
 			}
 
 		}

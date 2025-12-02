@@ -36,19 +36,16 @@ type Train struct {
 	Waggons            []TrainType //Alle müssen nebeneinander spawnen
 	Schedule           Schedule
 	NextStop           Stop     //nur fürs testen
-	currentPath        [][3]int //neu berechnen bei laden
-	currentPathSignals [][3]int
+	CurrentPath        [][3]int //neu berechnen bei laden
+	CurrentPathSignals [][3]int
 	Name               string
-	waiting            bool
+	Waiting            bool
 	Id                 int
 }
 
 type TrainType struct {
 	Position [3]int //x,y,sub
 	MaxSpeed int
-	Id       int
-	Size     int
-	Cargo    int
 }
 
 type wsEnvelope struct {

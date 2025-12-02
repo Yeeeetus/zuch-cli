@@ -44,28 +44,31 @@ func convertMapToString(model *model) string {
 	}
 
 	for i, train := range trains {
-		for _, wagon := range train.Waggons {
-			// 0 => lins 1 oben 2 rechts 3 unten
-			actualX := -1
-			actualY := -1
-			switch wagon.Position[2] {
-			case 1:
-				actualX = (wagon.Position[0] * 3)
-				actualY = (wagon.Position[1] * 3) + 1
-			case 2:
-				actualX = (wagon.Position[0] * 3) + 1
-				actualY = (wagon.Position[1] * 3)
-			case 3:
-				actualX = (wagon.Position[0] * 3) + 2
-				actualY = (wagon.Position[1] * 3) + 1
-			case 4:
-				actualX = (wagon.Position[0] * 3) + 1
-				actualY = (wagon.Position[1] * 3) + 2
-			}
-			if !(actualX == -1 || actualY == -1) {
-				intermidiate[actualY][actualX] = []rune(fmt.Sprint(i))[0]
-			}
+		if train != nil {
 
+			for _, wagon := range train.Waggons {
+				// 0 => lins 1 oben 2 rechts 3 unten
+				actualX := -1
+				actualY := -1
+				switch wagon.Position[2] {
+				case 1:
+					actualX = (wagon.Position[0] * 3)
+					actualY = (wagon.Position[1] * 3) + 1
+				case 2:
+					actualX = (wagon.Position[0] * 3) + 1
+					actualY = (wagon.Position[1] * 3)
+				case 3:
+					actualX = (wagon.Position[0] * 3) + 2
+					actualY = (wagon.Position[1] * 3) + 1
+				case 4:
+					actualX = (wagon.Position[0] * 3) + 1
+					actualY = (wagon.Position[1] * 3) + 2
+				}
+				if !(actualX == -1 || actualY == -1) {
+					intermidiate[actualY][actualX] = []rune(fmt.Sprint(i))[0]
+				}
+
+			}
 		}
 	}
 

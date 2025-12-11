@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"slices"
 )
 
 func convertMapToString(model *model) string {
@@ -33,17 +32,12 @@ func convertMapToString(model *model) string {
 		intermidiate = append(intermidiate, lineRow3)
 	}
 	// Display Trains
-	var indexes []int
-	for i := range model.Trains {
-		indexes = append(indexes, i)
-	}
-	slices.Sort(indexes)
 	var trains []*Train
-	for i := range indexes {
-		trains = append(trains, model.Trains[i])
+	for _, train := range model.Trains {
+		trains = append(trains, train)
 	}
 
-	for i, train := range trains {
+	for _, train := range trains {
 		if train != nil {
 
 			for _, wagon := range train.Waggons {
@@ -65,7 +59,7 @@ func convertMapToString(model *model) string {
 					actualY = (wagon.Position[1] * 3) + 2
 				}
 				if !(actualX == -1 || actualY == -1) {
-					intermidiate[actualY][actualX] = []rune(fmt.Sprint(i))[0]
+					intermidiate[actualY][actualX] = []rune(fmt.Sprint(train.Id))[0]
 				}
 
 			}
